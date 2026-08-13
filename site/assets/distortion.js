@@ -93,12 +93,12 @@
     const sag = fdef > 0.001 ? 46 : 0;
     // исходное положение
     g.push('<line class="ln gray ln-dash" x1="' + x0 + '" y1="' + yAx + '" x2="' + x1 + '" y2="' + yAx + '"/>');
-    g.push(cap(x0, yAx - 8, 'положение до сварки', 'gray'));
+    g.push(cap(x0, yAx + 16, 'положение до сварки', 'gray'));
     // деформированная балка: стенка
     const midx = (x0 + x1) / 2;
     const yb = (x) => {
       const u = (x - x0) / (x1 - x0);
-      return yAx + sag * 4 * u * (1 - u);
+      return yAx - sag * 4 * u * (1 - u);   // шов ниже нейтральной оси → выгиб вверх
     };
     const pts = [];
     for (let i = 0; i <= 40; i++) {
