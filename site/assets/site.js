@@ -12,43 +12,47 @@
     <path d="M11.6 21.2 Q15 15.4 18.4 21.2 Z" fill="#ffd166"/>
     <circle cx="15" cy="16.4" r="1.9" fill="#ffd166"/>
   </svg>`;
-  const chapters = [
-    { href: 't-arc', key: 't-arc', title: '1. Дуга и источники питания' },
-    { href: 't-processes', key: 't-processes', title: '2. Способы сварки' },
-    { href: 't-joints', key: 't-joints', title: '3. Соединения и разделки' },
-    { href: 't-metallurgy', key: 't-metallurgy', title: '4. Тепло и металлургия шва' },
-    { href: 't-defects', key: 't-defects', title: '5. Дефекты и контроль' },
-  ];
   const nav = [
-    { href: '', key: 'index', title: 'Обзор' },
-    { href: 'theory', key: 'theory', title: 'Теория', drop: chapters },
-    { href: 'modes', key: 'modes', title: 'Режимы сварки' },
-    { href: 'weldability', key: 'weldability', title: 'Свариваемость' },
-    { href: 'consumption', key: 'consumption', title: 'Расход материалов' },
-    { href: 'distortion', key: 'distortion', title: 'Деформации' },
-    { href: 'sources', key: 'sources', title: 'Источники' },
+    { h: '', k: 'index', t: 'Обзор' },
+    { t: 'Теория', h: 'theory', drop: [
+      { h: 'theory', k: 'theory', t: 'Оглавление курса' },
+      { h: 't-arc', k: 't-arc', t: '1. Дуга и источники питания' },
+      { h: 't-processes', k: 't-processes', t: '2. Способы сварки' },
+      { h: 't-joints', k: 't-joints', t: '3. Соединения и разделки' },
+      { h: 't-metallurgy', k: 't-metallurgy', t: '4. Тепло и металлургия шва' },
+      { h: 't-defects', k: 't-defects', t: '5. Дефекты и контроль' },
+    ] },
+    { t: 'Задачи', h: 'modes', drop: [
+      { h: 'modes', k: 'modes', t: 'Режимы сварки' },
+      { h: 'weldability', k: 'weldability', t: 'Свариваемость и подогрев' },
+      { h: 'consumption', k: 'consumption', t: 'Расход материалов' },
+      { h: 'distortion', k: 'distortion', t: 'Сварочные деформации' },
+    ] },
+    { h: 'sources', k: 'sources', t: 'Источники' },
   ];
-  const inChapter = chapters.some((c) => c.key === page);
-  const link = ({ href, key, title }) =>
-    `<a href="${root}${href}" class="${page === key ? 'on' : ''}">${title}</a>`;
+  const navLink = (it) =>
+    `<a href="${root}${it.h}" class="${page === it.k ? 'on' : ''}">${it.t}</a>`;
+  const navHtml = nav.map((g) => {
+    if (!g.drop) return navLink(g);
+    const on = g.drop.some((it) => page === it.k) ? 'on' : '';
+    return `<span class="nav-drop"><a href="${root}${g.h}" class="${on}">${g.t} ▾</a>`
+      + `<span class="drop">${g.drop.map(navLink).join('')}</span></span>`;
+  }).join('');
   const header = document.createElement('header');
   header.className = 'site';
   header.innerHTML = `<div class="wrap">
     <a class="logo" href="${root}">${logoSvg}<span>Сварка судовых конструкций</span></a>
-    <nav class="top">${nav.map((it) => {
-      if (!it.drop) return link(it);
-      const on = page === it.key || inChapter ? 'on' : '';
-      return `<span class="nav-drop"><a href="${root}${it.href}" class="${on}">${it.title} ▾</a>
-        <span class="drop">${it.drop.map(link).join('')}</span></span>`;
-    }).join('')}</nav>
+    <nav class="top">${navHtml}</nav>
   </div>`;
   document.body.prepend(header);
+  const onReady = (fn) => (document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', fn) : fn());
   const footer = document.createElement('footer');
   footer.className = 'site';
   footer.innerHTML = `<div class="wrap">
     <div>Учебный сайт по технологии сварки судовых конструкций · живые расчёты в браузере</div>
   </div>`;
-  document.body.appendChild(footer);
+  onReady(() => document.body.appendChild(footer));
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   defs.setAttribute('width', '0'); defs.setAttribute('height', '0');
   defs.style.position = 'absolute';
@@ -60,5 +64,5 @@
     <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
       <line x1="0" y1="0" x2="0" y2="7" stroke="#6b6b74" stroke-width="1"/></pattern>
   </defs>`;
-  document.body.appendChild(defs);
+  onReady(() => document.body.appendChild(defs));
 })();
