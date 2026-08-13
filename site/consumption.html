@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расход сварочных материалов — площадь наплавки, масса, электроды, проволока, газ, флюс</title>
+<meta name="description" content="Живой расчёт расхода сварочных материалов: площадь наплавленного металла углового и стыкового шва, число проходов, масса наплавки, расход электродов и проволоки, защитного газа и флюса, время сварки и расход электроэнергии.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>Расход сварочных материалов</h1>
+  <p class="lead">Вся цепочка нормирования держится на одной величине — площади
+  поперечного сечения наплавленного металла. Из неё получают массу наплавки,
+  из массы — расход электродов или проволоки с учётом потерь, расход защитного
+  газа и флюса, основное и полное время сварки и, наконец, расход
+  электроэнергии. Ниже эта цепочка развёрнута полностью, с чертежом сечения,
+  который перестраивается по вводимым размерам.</p>
+
+  <h2>Живой расчёт</h2>
+  <div class="panel">
+    <div class="inp" id="in">
+      <label><span>Тип шва</span>
+        <select id="joint">
+          <option value="fillet" selected>угловой (тавровое соединение)</option>
+          <option value="butt">стыковой с разделкой</option>
+        </select></label>
+      <label><span>Способ сварки</span>
+        <select id="proc">
+          <option value="smaw">РДС покрытым электродом (111)</option>
+          <option value="gmaw" selected>Механизированная в CO₂ / MAG (135)</option>
+          <option value="saw">Автоматическая под флюсом (121)</option>
+          <option value="fcaw">Порошковой проволокой (136)</option>
+          <option value="gtaw">Аргонодуговая TIG (141)</option>
+        </select></label>
+      <label><span>Катет K, мм (угловой шов)</span>
+        <input type="number" id="K" value="6" step="0.5" min="3" max="24"></label>
+      <label><span>Толщина s, мм (стыковой шов)</span>
+        <input type="number" id="s" value="14" step="0.5" min="1" max="60"></label>
+      <label><span>Форма разделки</span>
+        <select id="form">
+          <option value="none">без скоса кромок</option>
+          <option value="V" selected>V-образная (односторонняя)</option>
+          <option value="X">X-образная (двусторонняя)</option>
+        </select></label>
+      <label><span>Угол раскрытия разделки α, град</span>
+        <input type="number" id="alpha" value="60" step="5" min="20" max="100"></label>
+      <label><span>Притупление c, мм</span>
+        <input type="number" id="c" value="2" step="0.5" min="0" max="10"></label>
+      <label><span>Зазор b, мм</span>
+        <input type="number" id="b" value="2" step="0.5" min="0" max="8"></label>
+      <label><span>Высота усиления g, мм</span>
+        <input type="number" id="g" value="2" step="0.5" min="0" max="6"></label>
+      <label><span>Длина шва L, м</span>
+        <input type="number" id="L" value="12" step="0.5" min="0.1" max="500"></label>
+      <label><span>Сила тока I, А</span>
+        <input type="number" id="I" value="200" step="5" min="20" max="2000"></label>
+      <label><span>Напряжение U, В</span>
+        <input type="number" id="U" value="28" step="0.5" min="8" max="60"></label>
+      <label><span>Диаметр проволоки / электрода d, мм</span>
+        <input type="number" id="d" value="1.2" step="0.1" min="0.6" max="8"></label>
+      <label><span>Коэффициент наплавки α<sub>н</sub>, г/(А·ч)</span>
+        <input type="number" id="an" value="13" step="0.5" min="2" max="40"></label>
+      <label><span>Коэффициент расхода материала</span>
+        <input type="number" id="kel" value="1.06" step="0.01" min="1" max="2"></label>
+      <label><span>Коэффициент использования сварочного поста k<sub>п</sub></span>
+        <input type="number" id="kp" value="0.585" step="0.005" min="0.2" max="1"></label>
+      <label><span>Расход защитного газа, л/мин</span>
+        <input type="number" id="qg" value="15" step="1" min="0" max="40"></label>
+      <label><span>Расход флюса на 1 кг проволоки, кг</span>
+        <input type="number" id="kfl" value="1.1" step="0.05" min="0" max="2"></label>
+      <label><span>Плотность металла ρ, г/см³</span>
+        <input type="number" id="rho" value="7.85" step="0.01" min="2" max="12"></label>
+      <label><span>КПД источника питания η<sub>и</sub></span>
+        <input type="number" id="eff" value="0.8" step="0.05" min="0.4" max="1"></label>
+      <label><span>Мощность холостого хода P<sub>хх</sub>, кВт</span>
+        <input type="number" id="pxx" value="0.3" step="0.05" min="0" max="3"></label>
+    </div>
+
+    <div class="boards">
+      <div>
+        <svg viewBox="0 0 640 320" class="geo-board" style="max-width:640px" id="board"></svg>
+        <div class="caption">Сечение шва в масштабе введённых размеров; штриховкой
+        показан основной металл, заливкой — наплавленный, кружками — проходы.</div>
+      </div>
+      <div>
+        <div class="live-sum" id="sum"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Шаг 1. Площадь наплавленного металла</h2>
+  <p>Для <b>углового шва</b> сечение — прямоугольный треугольник с катетами
+  <em>K</em>, к которому добавляется выпуклость. Выпуклость учитывают
+  множителем 1,2:</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$F_{\text{н}} = 1{,}2\,\frac{K^{2}}{2}$$</div>
+      <div class="cs" id="o_ffil"></div>
+    </div>
+  </div>
+  <p>Для <b>стыкового шва</b> сечение складывается из трёх частей: объёма самой
+  разделки, зазора и усиления с лицевой стороны. Площадь усиления считают через
+  коэффициент полноты μ<sub>в</sub> = 0,73 — сегмент усиления не треугольник и
+  не прямоугольник:</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$F = \underbrace{h^{2}\operatorname{tg}\frac{\alpha}{2}}_{\text{разделка}} + \underbrace{b\,s}_{\text{зазор}} + \underbrace{0{,}73\,e\,g}_{\text{усиление}}$$</div>
+      <div class="cs" id="o_fbutt"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Ширина шва по геометрии разделки:
+      $$e = b + 2h\operatorname{tg}\frac{\alpha}{2} + 2\Delta$$</div>
+      <div class="cs" id="o_e"></div>
+    </div>
+  </div>
+  <p class="small">Здесь <em>h</em> — глубина разделки (для V-образной
+  <em>h</em> = <em>s</em> − <em>c</em>, для X-образной каждая половина
+  <em>h</em> = (<em>s</em> − <em>c</em>)/2), Δ ≈ 1,5 мм — перекрытие кромок
+  наплавленным металлом. Коэффициент формы усиления
+  ψ<sub>в</sub> = <em>e</em>/<em>g</em> должен лежать в пределах 7–10: слишком
+  узкое и высокое усиление создаёт концентратор напряжений в месте перехода
+  шва к основному металлу.</p>
+
+  <h2>Шаг 2. Число проходов</h2>
+  <p>Сечение одного прохода ограничено условиями формирования шва — не более
+  100 мм². Для угловых швов число проходов проще назначать прямо по катету:</p>
+  <div class="tscroll">
+  <table class="t" id="tab_pass">
+    <thead><tr><th>Катет K, мм</th><th class="n">Число проходов</th></tr></thead>
+    <tbody>
+      <tr data-lo="0" data-hi="9"><td>до 8–9</td><td class="n">1</td></tr>
+      <tr data-lo="9" data-hi="14"><td>9–14</td><td class="n">2</td></tr>
+      <tr data-lo="14" data-hi="16"><td>15–16</td><td class="n">3</td></tr>
+      <tr data-lo="16" data-hi="20"><td>17–20</td><td class="n">4</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="calc">
+    <div class="calc-row"><div class="cf">Принятое число проходов:</div><div class="cs" id="o_n"></div></div>
+  </div>
+
+  <h2>Шаг 3. Масса наплавленного металла</h2>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$M = F \, L \, \rho$$</div>
+      <div class="cs" id="o_M"></div>
+    </div>
+  </div>
+  <p class="small">Плотность: сталь 7,85 г/см³, коррозионностойкая сталь
+  8,02 г/см³, титан 4,51 г/см³. В формуле удобно считать <em>F</em> в мм²,
+  <em>L</em> в метрах — тогда масса сразу получается в килограммах после
+  деления на 1000.</p>
+
+  <h2>Шаг 4. Расход сварочных материалов</h2>
+  <p>Наплавленный металл — не весь израсходованный. При ручной дуговой сварке
+  часть электрода уходит в огарок, покрытие и разбрызгивание, поэтому
+  коэффициент расхода электродов достигает 1,6–1,7. У механизированных
+  способов потери намного меньше и их удобнее выражать долей ψ.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$G = M \, k_{\text{р}}$$</div>
+      <div class="cs" id="o_G"></div>
+    </div>
+    <div class="calc-row"><div class="cf">Расход защитного газа:</div><div class="cs" id="o_gas"></div></div>
+    <div class="calc-row"><div class="cf">Расход флюса:</div><div class="cs" id="o_flux"></div></div>
+  </div>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>Способ сварки</th><th>Коэффициент расхода / потери</th><th class="n">α<sub>н</sub>, г/(А·ч)</th><th class="n">k<sub>п</sub></th></tr></thead>
+    <tbody>
+      <tr><td>Ручная дуговая покрытым электродом</td><td>k<sub>р</sub> = 1,6–1,7 (огарок, покрытие, разбрызгивание)</td><td class="n">8–10</td><td class="n">0,50–0,55</td></tr>
+      <tr><td>Механизированная в защитном газе</td><td>потери ψ = 0,05–0,08</td><td class="n">10–16</td><td class="n">0,57–0,60</td></tr>
+      <tr><td>Автоматическая под флюсом</td><td>потери ψ = 0,02–0,03</td><td class="n">14–22</td><td class="n">0,60–0,70</td></tr>
+      <tr><td>Порошковой проволокой</td><td>k<sub>р</sub> = 1,25–1,35</td><td class="n">13,6–26,6</td><td class="n">0,55–0,60</td></tr>
+      <tr><td>Аргонодуговая с присадкой</td><td>k<sub>р</sub> = 1,01–1,02</td><td class="n">4,2–10</td><td class="n">0,50–0,55</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">Коэффициент наплавки под флюсом на постоянном токе обратной
+  полярности принимают около 11,6 ± 0,4 г/(А·ч) по коэффициенту расплавления;
+  при сварке в углекислом газе коэффициент расплавления зависит ещё и от вылета:
+  α<sub>р</sub> = 9,05 + 3,1·10⁻⁴·<em>I</em>·<em>l</em>/<em>d</em>².</p>
+  <div class="note warn"><b>Оговорка о коэффициенте наплавки.</b> Величину
+  α<sub>н</sub> в г/(А·ч) приводят практически все отечественные учебные
+  пособия, но найти её в действующем нормативном документе не удаётся: это
+  справочная величина, зависящая от конкретной марки электрода или проволоки,
+  и брать её следует из паспорта сварочного материала. Международная практика
+  оперирует другой характеристикой — скоростью наплавления в кг/ч: по данным
+  TWI это 0,4–5,5 кг/ч для ручной дуговой сварки, 0,6–12 кг/ч для MAG,
+  1,0–15 кг/ч для порошковой проволоки и 3–16 кг/ч для сварки под флюсом.
+  Проверить согласованность просто: произведение α<sub>н</sub>·<em>I</em>/1000
+  и есть скорость наплавления в кг/ч, и она показана в сводке расчёта.</div>
+
+  <h2>Шаг 5. Скорость сварки и время</h2>
+  <p>Скорость сварки следует из баланса: за час электрод наплавляет
+  α<sub>н</sub>·<em>I</em> граммов металла, и этого должно хватить на
+  заполнение сечения прохода по всей пройденной длине.</p>
+  <div class="calc">
+    <div class="calc-row">
+      <div class="cf">$$v = \frac{\alpha_{\text{н}} I}{3600\,\gamma\,F_1}$$</div>
+      <div class="cs" id="o_v"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">$$v_{\text{п}} = \frac{4\,\alpha_{\text{н}} I}{\pi d^{2} \gamma}$$</div>
+      <div class="cs" id="o_vp"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$t_{0} = \frac{M}{\alpha_{\text{н}} I}, \qquad t = \frac{t_{0}}{k_{\text{п}}}$$</div>
+      <div class="cs" id="o_t0"></div>
+    </div>
+    <div class="calc-row"><div class="cf">Полное время с учётом вспомогательных операций:</div><div class="cs" id="o_t"></div></div>
+  </div>
+  <p class="small">Коэффициент использования сварочного поста k<sub>п</sub>
+  учитывает смену электродов, зачистку шва от шлака, переходы, кантовку
+  и подготовительные операции: ручная дуговая сварка 0,50–0,55,
+  механизированная 0,57–0,60, автоматическая под флюсом 0,60–0,70.</p>
+
+  <h2>Шаг 6. Расход электроэнергии</h2>
+  <p>Энергия расходуется на горение дуги в течение основного времени и на
+  холостой ход источника в течение всего остального:</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$A = \frac{U I t_{0}}{1000\,\eta_{\text{и}}} + P_{\text{хх}}\,(t - t_{0})$$</div>
+      <div class="cs" id="o_A"></div>
+    </div>
+  </div>
+  <p class="small">КПД источника питания η<sub>и</sub> и мощность холостого хода
+  P<sub>хх</sub> берут из паспорта конкретного аппарата; принятые по умолчанию
+  0,8 и 0,3 кВт — типовые значения инженерной практики, а не норматив.</p>
+
+  <h2>Сводка расчёта</h2>
+  <div class="tscroll">
+    <table class="t" id="tab_res"><tbody></tbody></table>
+  </div>
+
+  <p class="small">Режим сварки, от которого зависят <em>I</em>, <em>U</em>
+  и число проходов, подбирается в разделе <a href="modes">«Режимы сварки»</a>;
+  влияние того же режима на коробление конструкции — в разделе
+  <a href="distortion">«Деформации»</a>.</p>
+</main>
+<script src="assets/site.js" data-root="./" data-page="consumption"></script>
+<script src="assets/wcalc.js"></script>
+<script src="assets/consumption.js"></script>
+</body>
+</html>
