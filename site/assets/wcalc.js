@@ -22,12 +22,9 @@ window.W = (function () {
     if (b === 1) return one;
     return many;
   }
-  // Диапазон «a…b».
-  function fr(a, b, dec) { return f(a, dec) + '…' + f(b, dec); }
   const num = (id) => parseFloat(String(el(id).value).replace(',', '.')) || 0;
   const val = (id) => el(id).value;
   const el = (id) => document.getElementById(id);
-  const setText = (id, s) => { const n = el(id); if (n) n.textContent = s; };
   const setHtml = (id, s) => { const n = el(id); if (n) n.innerHTML = s; };
 
   /* Строка живого расчёта: подстановка серым, результат жирным.
@@ -94,7 +91,6 @@ window.W = (function () {
   // q_п в кал/см: 0,24·I·U·η/v, v в см/с.
   function heatInputCal(eta, U, I, v_cms) { return 0.24 * I * U * eta / v_cms; }
   const mhToMms = (v) => v / 3.6;          // м/ч → мм/с
-  const mmsToMh = (v) => v * 3.6;          // мм/с → м/ч
 
   /* ---------- эквивалент углерода ---------- */
   // c — объект с массовыми долями в процентах: C, Si, Mn, Cr, Mo, Ni, Cu, V, B, P.
@@ -170,13 +166,6 @@ window.W = (function () {
     cg = cg || STEEL.cg;
     return Math.sqrt(q_Jmm / (cg * (T - T0)));
   }
-  /* Действительная скорость охлаждения — меньшая из двух оценок; схема выбирается
-     сравнением толщины с граничной s*. */
-  function coolRate(q_Jmm, T, T0, s) {
-    const a = coolThick(q_Jmm, T, T0), b = coolThin(q_Jmm, T, T0, s);
-    const ss = sStar(q_Jmm, T, T0);
-    return { thick: a, thin: b, w: Math.min(a, b), sStar: ss, scheme: s < ss ? 'thin' : 'thick' };
-  }
   /* Время охлаждения в интервале 800→500 °C. Получено интегрированием тех же
      зависимостей Рыкалина: dt = dT / ω(T).
        массивное тело: Δt = q/(2πλ) [1/(500−T₀) − 1/(800−T₀)];
@@ -220,9 +209,6 @@ window.W = (function () {
   // Скорость сварки из баланса наплавки: v [м/ч] = α_н·I/(ρ·F), F в см².
   const speedFromDeposit = (alphaN, I, F_mm2, rho) =>
     alphaN * I / ((rho || RHO.steel) * (F_mm2 / 100)) / 100;
-  // Обратная задача: площадь прохода при заданной скорости.
-  const areaFromSpeed = (alphaN, I, v_mh, rho) =>
-    alphaN * I / ((rho || RHO.steel) * v_mh * 100) * 100;
   // Плотность тока в электроде/проволоке, А/мм².
   const currentDensity = (I, d) => I / (Math.PI * d * d / 4);
   /* Скорость подачи проволоки, м/ч: v_п = 4·α_н·I/(π·d²·ρ), d в мм.
@@ -230,8 +216,6 @@ window.W = (function () {
      π(d/10)²/4 [см²] — получаем см/ч; перевод в м/ч даёт как раз эту запись. */
   const wireFeed = (alphaN, I, d, rho) =>
     4 * alphaN * I / (Math.PI * d * d * (rho || RHO.steel));
-  // Коэффициент расплавления при сварке в CO₂: α_р = 9,05 + 3,1·10⁻⁴·I·l/d².
-  const alphaMeltCO2 = (I, l, d) => 9.05 + 3.1e-4 * I * l / (d * d);
 
   /* ---------- деформации ---------- */
   // Поперечное укорочение однопроходного шва: ΔW = α·q_п/(cγ·s), мм.
@@ -261,14 +245,14 @@ window.W = (function () {
   }
 
   return {
-    f, fr, plural, el, num, val, setText, setHtml, out, bind, esc,
-    STEEL, RHO, PROC, mid,
-    heatInputEN, heatInputRU, heatInputCal, mhToMms, mmsToMh,
+    f, plural, el, num, val, setHtml, out, bind, esc,
+    STEEL, PROC, mid,
+    heatInputEN, heatInputRU, heatInputCal, mhToMms,
     CEV, CET, Pcm, CE_GOST, preheatCET, preheatB, preheatBParts,
-    HD_SCALE, hdScale, CEV_LIMIT, cevLimit,
-    coolThick, coolThin, sStar, coolRate, t85,
+    hdScale, cevLimit,
+    coolThick, coolThin, sStar, t85,
     areaFillet, passesFillet, areaButt, massDeposit,
-    speedFromDeposit, areaFromSpeed, currentDensity, wireFeed, alphaMeltCO2,
+    speedFromDeposit, currentDensity, wireFeed,
     shrinkTrans, shrinkLongRel, shrinkForce, camber,
     dBySmaw, kByD,
   };

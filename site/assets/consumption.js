@@ -2,7 +2,6 @@
 'use strict';
 (function () {
   const W = window.W, f = W.f, num = W.num, val = W.val, el = W.el;
-  const F1MAX = { smaw: 40, gmaw: 45, saw: 100, fcaw: 60, gtaw: 25 };
   const DEF = {   // значения, подставляемые при смене способа сварки
     smaw: { d: 4, an: 9, kel: 1.65, kp: 0.52, qg: 0, I: 150, U: 25 },
     gmaw: { d: 1.2, an: 13, kel: 1.06, kp: 0.585, qg: 15, I: 200, U: 28 },
@@ -144,7 +143,7 @@
       f(A / Math.max(M, 1e-9), 2) + ' кВт·ч/кг.');
 
     /* сводка */
-    W.setHtml('sum', [
+    W.setHtml('sum', sumCells([
       ['Сечение наплавки', f(G.F, 1) + ' мм²'],
       ['Проходов', String(n)],
       ['Масса наплавки', f(M, 3) + ' кг'],
@@ -154,8 +153,7 @@
       ['Основное время', f(t0 * 60, 0) + ' мин'],
       ['Полное время', f(t * 60, 0) + ' мин'],
       ['Электроэнергия', f(A, 2) + ' кВт·ч'],
-    ].map(([k, vv]) => '<div class="cell"><span class="k">' + k + '</span><span class="v">' +
-      vv + '</span></div>').join(''));
+    ]));
 
     const rows = [
       ['Площадь наплавленного металла F', f(G.F, 1), 'мм²'],
@@ -191,10 +189,6 @@
     let sc = 110 / size;
     sc = Math.max(2, Math.min(26, sc));
     const g = [];
-    const cap = (x, y, t, cls, an) => '<text class="cap ' + (cls || '') + '" x="' + x + '" y="' + y +
-      '"' + (an ? ' text-anchor="' + an + '"' : '') + '>' + t + '</text>';
-    const dim = (x1, y1, x2, y2) => '<line class="ln-dim" x1="' + x1 + '" y1="' + y1 +
-      '" x2="' + x2 + '" y2="' + y2 + '"/>';
 
     if (fillet) {
       const Kp = G.K * sc, th = Math.max(6, Kp * 0.6);
@@ -224,13 +218,13 @@
             '" fill="none" stroke="#155e75" stroke-width="1.2" stroke-dasharray="3 3"/>');
         }
       });
-      g.push(dim(cx + wh / 2, yb + 26, cx + wh / 2 + Kp, yb + 26));
-      g.push(cap(cx + wh / 2 + Kp / 2, yb + 42, 'K = ' + f(G.K, 1) + ' мм', 'red', 'middle'));
-      g.push(dim(cx + wh / 2 + Kp + 30, yTop, cx + wh / 2 + Kp + 30, yTop - Kp));
-      g.push(cap(cx + wh / 2 + Kp + 36, yTop - Kp / 2, 'K', 'red'));
-      g.push(cap(120, yTop - 8, 'полотнище', 'gray'));
-      g.push(cap(cx + wh / 2 + 8, top + 16, 'стенка набора', 'gray'));
-      g.push(cap(20, VB_H - 12, 'F = 1,2·K²/2 = ' + f(G.F, 1) + ' мм² · проходов ' + n +
+      g.push(svgDim(cx + wh / 2, yb + 26, cx + wh / 2 + Kp, yb + 26));
+      g.push(svgCap(cx + wh / 2 + Kp / 2, yb + 42, 'K = ' + f(G.K, 1) + ' мм', 'red', 'middle'));
+      g.push(svgDim(cx + wh / 2 + Kp + 30, yTop, cx + wh / 2 + Kp + 30, yTop - Kp));
+      g.push(svgCap(cx + wh / 2 + Kp + 36, yTop - Kp / 2, 'K', 'red'));
+      g.push(svgCap(120, yTop - 8, 'полотнище', 'gray'));
+      g.push(svgCap(cx + wh / 2 + 8, top + 16, 'стенка набора', 'gray'));
+      g.push(svgCap(20, VB_H - 12, 'F = 1,2·K²/2 = ' + f(G.F, 1) + ' мм² · проходов ' + n +
         ' (с каждой стороны)', 'gray'));
     } else {
       const S = G.s * sc, b = G.b * sc, yb = yTop + S;
@@ -280,19 +274,19 @@
           '" fill="none" stroke="#155e75" stroke-width="1.2" stroke-dasharray="3 3"/>');
       }
       // размеры
-      g.push(dim(56, yTop, 56, yb));
-      g.push(cap(50, (yTop + yb) / 2 + 4, 's = ' + f(G.s, 1), 'blue', 'end'));
-      g.push(dim(cx - b / 2, yb + 24, cx + b / 2, yb + 24));
-      g.push(cap(cx, yb + 40, 'b = ' + f(G.b, 1) + ' мм', 'gray', 'middle'));
+      g.push(svgDim(56, yTop, 56, yb));
+      g.push(svgCap(50, (yTop + yb) / 2 + 4, 's = ' + f(G.s, 1), 'blue', 'end'));
+      g.push(svgDim(cx - b / 2, yb + 24, cx + b / 2, yb + 24));
+      g.push(svgCap(cx, yb + 40, 'b = ' + f(G.b, 1) + ' мм', 'gray', 'middle'));
       if (form !== 'none') {
-        g.push(cap(cx + eW / 2 + 12, yTop + h / 2, 'h = ' + f(G.a.h, 1) + ' мм, α = ' +
+        g.push(svgCap(cx + eW / 2 + 12, yTop + h / 2, 'h = ' + f(G.a.h, 1) + ' мм, α = ' +
           f(G.alpha, 0) + '°', 'gray'));
-        g.push(cap(cx - eW / 2 - 12, yb - 6, 'притупление c = ' + f(G.c, 1) + ' мм', 'gray', 'end'));
+        g.push(svgCap(cx - eW / 2 - 12, yb - 6, 'притупление c = ' + f(G.c, 1) + ' мм', 'gray', 'end'));
       }
-      g.push(dim(cx - eW / 2, yTop - 2 * gRe - 14, cx + eW / 2, yTop - 2 * gRe - 14));
-      g.push(cap(cx, yTop - 2 * gRe - 20, 'e = ' + f(G.a.e, 1) + ' мм, g = ' + f(G.g, 1) + ' мм',
+      g.push(svgDim(cx - eW / 2, yTop - 2 * gRe - 14, cx + eW / 2, yTop - 2 * gRe - 14));
+      g.push(svgCap(cx, yTop - 2 * gRe - 20, 'e = ' + f(G.a.e, 1) + ' мм, g = ' + f(G.g, 1) + ' мм',
         'red', 'middle'));
-      g.push(cap(20, VB_H - 12, 'F = ' + f(G.a.Fgroove, 1) + ' + ' + f(G.a.Fgap, 1) + ' + ' +
+      g.push(svgCap(20, VB_H - 12, 'F = ' + f(G.a.Fgroove, 1) + ' + ' + f(G.a.Fgap, 1) + ' + ' +
         f(G.a.Freinf, 1) + ' = ' + f(G.F, 1) + ' мм² · проходов ' + n, 'gray'));
     }
     el('board').innerHTML = g.join('');

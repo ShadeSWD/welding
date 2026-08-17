@@ -4,8 +4,6 @@
   const W = window.W;
   const f = W.f, num = W.num, val = W.val, el = W.el;
 
-  // Практический предел сечения одного прохода, мм² (нормативный потолок — 100 мм²).
-  const F1MAX = { smaw: 40, gmaw: 45, saw: 100, fcaw: 60, gtaw: 25 };
   // Типовая плотность тока для проволоки, А/мм².
   const JTYP = { gmaw: 130, fcaw: 110, saw: 45 };
   const POS = { down: 'нижнее', horiz: 'горизонтальное', vert: 'вертикальное', over: 'потолочное' };
@@ -171,27 +169,25 @@
       ' м/ч отличается на ' + f(Math.abs(v_mh - vBal) / vBal * 100, 0) + ' %.');
 
     /* сводка */
-    W.setHtml('sum', [
+    W.setHtml('sum', sumCells([
       ['Погонная энергия', f(Q, 3) + ' кДж/мм'],
       ['Ток', f(I, 0) + ' А'],
       ['Напряжение', f(U, 1) + ' В'],
       ['Скорость', f(v_mh, 1) + ' м/ч'],
       ['Проходов', String(n)],
       ['Плотность тока', f(j, 0) + ' А/мм²'],
-    ].map(([kk, vv]) => '<div class="cell"><span class="k">' + kk + '</span><span class="v">' +
-      vv + '</span></div>').join(''));
+    ]));
 
     /* проверки */
     const ch = [];
-    const badge = (ok, t) => '<span class="badge ' + (ok ? 'ok' : 'bad') + '">' + t + '</span>';
     if (proc === 'gmaw' || proc === 'fcaw')
-      ch.push(badge(j >= 50 && j <= 450, 'плотность тока ' + f(j, 0) + ' А/мм²'));
-    ch.push(badge(U >= p.uRange[0] && U <= p.uRange[1],
+      ch.push(badgeHtml(j >= 50 && j <= 450, 'плотность тока ' + f(j, 0) + ' А/мм²'));
+    ch.push(badgeHtml(U >= p.uRange[0] && U <= p.uRange[1],
       'напряжение в диапазоне ' + p.uRange[0] + '–' + p.uRange[1] + ' В'));
-    ch.push(badge(F1 <= 100, 'сечение прохода ' + f(F1, 0) + ' мм² ≤ 100 мм²'));
+    ch.push(badgeHtml(F1 <= 100, 'сечение прохода ' + f(F1, 0) + ' мм² ≤ 100 мм²'));
     if (proc === 'smaw')
-      ch.push(badge(d >= 1.6 && d <= 6, 'диаметр электрода ' + f(d, 1) + ' мм'));
-    ch.push(badge(v_mh >= p.vRange[0] && v_mh <= p.vRange[1],
+      ch.push(badgeHtml(d >= 1.6 && d <= 6, 'диаметр электрода ' + f(d, 1) + ' мм'));
+    ch.push(badgeHtml(v_mh >= p.vRange[0] && v_mh <= p.vRange[1],
       'скорость в типовом диапазоне ' + p.vRange[0] + '–' + p.vRange[1] + ' м/ч'));
     if (p.gas) ch.push('<span class="badge ok">защитный газ ' + p.gas[0] + '–' + p.gas[1] + ' л/мин</span>');
     if (proc === 'smaw')
@@ -216,9 +212,6 @@
     sc = Math.max(2.2, Math.min(22, sc));
     const S = s * sc, D = Math.max(4, d * sc);
     const g = [];
-    const cap = (x, y, t, cls, anchor) =>
-      '<text class="cap ' + (cls || '') + '" x="' + x + '" y="' + y + '"' +
-      (anchor ? ' text-anchor="' + anchor + '"' : '') + '>' + t + '</text>';
 
     if (joint === 'fillet') {
       const Kp = Math.max(6, K * sc);
@@ -233,10 +226,10 @@
           ' Q ' + (x0 + sg * Kp * 0.45) + ' ' + (yTop - Kp * 0.45) + ' ' + x0 + ' ' + (yTop - Kp) +
           ' Z" stroke="#b3382e" stroke-width="1.6"/>');
       });
-      g.push('<line class="ln-dim" x1="' + (cx + S / 2) + '" y1="' + (yTop + 26) + '" x2="' + (cx + S / 2 + Kp) + '" y2="' + (yTop + 26) + '"/>');
-      g.push(cap(cx + S / 2 + Kp / 2, yTop + 40, 'K = ' + f(K, 1) + ' мм', 'red', 'middle'));
-      g.push(cap(150, yTop - 10, 'полка', 'gray'));
-      g.push(cap(cx + S / 2 + 10, 80, 'стенка набора', 'gray'));
+      g.push(svgDim(cx + S / 2, yTop + 26, cx + S / 2 + Kp, yTop + 26));
+      g.push(svgCap(cx + S / 2 + Kp / 2, yTop + 40, 'K = ' + f(K, 1) + ' мм', 'red', 'middle'));
+      g.push(svgCap(150, yTop - 10, 'полка', 'gray'));
+      g.push(svgCap(cx + S / 2 + 10, 80, 'стенка набора', 'gray'));
     } else {
       const gr = sec.gr, b = gr.b * sc;
       const tgv = Math.tan(gr.alpha * Math.PI / 360);
@@ -269,12 +262,12 @@
       g.push('<path class="fill-weld" d="M ' + (cx - eW / 2) + ' ' + yTop + ' Q ' + cx + ' ' + (yTop - 2 * gRe) +
         ' ' + (cx + eW / 2) + ' ' + yTop + ' Z" stroke="#b3382e" stroke-width="1.4"/>');
       // размеры
-      g.push('<line class="ln-dim" x1="70" y1="' + yTop + '" x2="70" y2="' + yBot + '"/>');
-      g.push(cap(64, (yTop + yBot) / 2 + 4, 's = ' + f(s, 1) + ' мм', 'blue', 'end'));
-      g.push(cap(cx, yBot + 20, 'зазор b = ' + f(gr.b, 1) + ' мм, притупление c = ' + f(gr.c, 1) + ' мм', 'gray', 'middle'));
+      g.push(svgDim(70, yTop, 70, yBot));
+      g.push(svgCap(64, (yTop + yBot) / 2 + 4, 's = ' + f(s, 1) + ' мм', 'blue', 'end'));
+      g.push(svgCap(cx, yBot + 20, 'зазор b = ' + f(gr.b, 1) + ' мм, притупление c = ' + f(gr.c, 1) + ' мм', 'gray', 'middle'));
       g.push('<line class="ln-thin gray" x1="' + (cx - eW / 2) + '" y1="' + (yTop - gRe) +
         '" x2="' + Math.max(96, cx - eW / 2 - 40) + '" y2="' + (yTop - gRe - 24) + '"/>');
-      g.push(cap(Math.max(94, cx - eW / 2 - 42), yTop - gRe - 28,
+      g.push(svgCap(Math.max(94, cx - eW / 2 - 42), yTop - gRe - 28,
         'усиление g = ' + f(gr.g, 1) + ' мм, разделка ' + f(gr.alpha, 0) + '°', 'red', 'end'));
     }
 
@@ -290,13 +283,13 @@
       '" stroke="#16161a" stroke-width="' + Math.min(26, D) + '" stroke-linecap="butt" fill="none" opacity="0.25"/>');
     g.push('<path d="M ' + (ex - arc * 0.5) + ' ' + yTop + ' Q ' + ex + ' ' + (ey - arc * 0.3) + ' ' +
       (ex + arc * 0.5) + ' ' + yTop + ' Z" fill="#b45309" opacity="0.55"/>');
-    g.push('<line class="ln-dim" x1="' + (ex + 54) + '" y1="' + ey + '" x2="' + (ex + 54) + '" y2="' + yTop + '"/>');
-    g.push(cap(ex + 60, (ey + yTop) / 2 + 4, 'длина дуги', 'red'));
-    g.push(cap(Math.min(560, x2 + 18), y2 + 14, 'электрод d = ' + f(d, 1) + ' мм', 'gray'));
+    g.push(svgDim(ex + 54, ey, ex + 54, yTop));
+    g.push(svgCap(ex + 60, (ey + yTop) / 2 + 4, 'длина дуги', 'red'));
+    g.push(svgCap(Math.min(560, x2 + 18), y2 + 14, 'электрод d = ' + f(d, 1) + ' мм', 'gray'));
     // стрелка скорости
-    g.push('<line class="ln-dim" x1="' + (cx - 150) + '" y1="34" x2="' + (cx - 40) + '" y2="34"/>');
-    g.push(cap(cx - 150, 24, 'направление сварки, v = ' + f(num('v'), 1) + ' м/ч', 'blue'));
-    g.push(cap(20, 292, 'проходов: ' + n + ' · сечение наплавки ' + f(sec.F, 1) + ' мм²', 'gray'));
+    g.push(svgDim(cx - 150, 34, cx - 40, 34));
+    g.push(svgCap(cx - 150, 24, 'направление сварки, v = ' + f(num('v'), 1) + ' м/ч', 'blue'));
+    g.push(svgCap(20, 292, 'проходов: ' + n + ' · сечение наплавки ' + f(sec.F, 1) + ' мм²', 'gray'));
 
     el('board').innerHTML = g.join('');
   }

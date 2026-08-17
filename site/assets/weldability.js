@@ -9,7 +9,6 @@
     ELS.forEach((k) => { c[k] = num(k); });
     return c;
   }
-  const p2 = (x) => f(x, 2).replace(',', ',');
 
   function recalcCE() {
     const c = comp(), grade = val('grade'), t = num('t');
@@ -57,13 +56,12 @@
       'Полный расчёт по уравнению C.8 при введённых выше d, H_D и Q даёт ' +
       f(TpFull, 0) + ' °C — разница ' + f(Math.abs(Tp - TpFull), 0) + ' °C.');
 
-    W.setHtml('sum', [
+    W.setHtml('sum', sumCells([
       ['CEV', f(cev, 3)], ['CET', f(cet, 3)], ['P_cm', f(pcm, 3)],
       ['C_э (ГОСТ 27772)', f(ce, 3)],
       ['Предел CEV', f(lim, 2)],
       ['Оценка', ok ? 'в норме' : 'превышение'],
-    ].map(([k, v]) => '<div class="cell"><span class="k">' + k + '</span><span class="v">' +
-      v + '</span></div>').join(''));
+    ]));
 
     document.querySelectorAll('#tab_lim tbody tr').forEach((tr) => {
       tr.classList.toggle('on', tr.dataset.g === grade);
@@ -136,8 +134,6 @@
     const maxAbs = Math.max(60, ...items.map((i) => Math.abs(i[1])));
     const sc = 70 / maxAbs;
     const g = [];
-    const cap = (x, y, t, cls, an) => '<text class="cap ' + (cls || '') + '" x="' + x + '" y="' + y +
-      '"' + (an ? ' text-anchor="' + an + '"' : '') + '>' + t + '</text>';
     g.push('<line class="ln-axis" x1="30" y1="' + y0 + '" x2="614" y2="' + y0 + '"/>');
     items.forEach((it, i) => {
       const x = x0 + i * (bw + gap);
@@ -147,12 +143,12 @@
       g.push('<rect x="' + x + '" y="' + yTop.toFixed(1) + '" width="' + bw + '" height="' +
         Math.abs(h).toFixed(1) + '" fill="' + col + '" opacity="0.45" stroke="' + col +
         '" stroke-width="1.4"/>');
-      g.push(cap(x + bw / 2, (h >= 0 ? yTop - 6 : yTop + Math.abs(h) + 14).toFixed(1),
+      g.push(svgCap(x + bw / 2, (h >= 0 ? yTop - 6 : yTop + Math.abs(h) + 14).toFixed(1),
         f(it[1], 0) + ' °C', i === 4 ? 'b' : (it[1] >= 0 ? 'red' : 'green'), 'middle'));
-      g.push(cap(x + bw / 2, 244, it[0], 'gray', 'middle'));
+      g.push(svgCap(x + bw / 2, 244, it[0], 'gray', 'middle'));
     });
-    g.push(cap(30, 22, 'Вклады в требуемую температуру подогрева (C.3–C.6) и итог (C.8)', 'b'));
-    g.push(cap(30, 38, 'зелёным — вклады, снижающие требуемый подогрев', 'green'));
+    g.push(svgCap(30, 22, 'Вклады в требуемую температуру подогрева (C.3–C.6) и итог (C.8)', 'b'));
+    g.push(svgCap(30, 38, 'зелёным — вклады, снижающие требуемый подогрев', 'green'));
     el('board3').innerHTML = g.join('');
   }
 
@@ -207,17 +203,15 @@
     const X = (t) => x0 + (x1 - x0) * Math.min(1, t / tEnd);
     const Y = (T) => y0 - (y0 - y1) * (T - T0) / (Tmax - T0);
     const g = [];
-    const cap = (x, y, t, cls, an) => '<text class="cap ' + (cls || '') + '" x="' + x + '" y="' + y +
-      '"' + (an ? ' text-anchor="' + an + '"' : '') + '>' + t + '</text>';
     // оси
     g.push('<line class="ln-axis" x1="' + x0 + '" y1="' + y0 + '" x2="' + x1 + '" y2="' + y0 + '"/>');
     g.push('<line class="ln-axis" x1="' + x0 + '" y1="' + y0 + '" x2="' + x0 + '" y2="' + y1 + '"/>');
-    g.push(cap(x1, y0 + 18, 'время, с', 'gray', 'end'));
-    g.push(cap(x0 - 6, y1 - 8, 'T, °C', 'gray', 'start'));
+    g.push(svgCap(x1, y0 + 18, 'время, с', 'gray', 'end'));
+    g.push(svgCap(x0 - 6, y1 - 8, 'T, °C', 'gray', 'start'));
     [200, 500, 800, 1100, 1400].forEach((T) => {
       if (T <= T0) return;
       g.push('<line class="ln-link" x1="' + x0 + '" y1="' + Y(T) + '" x2="' + x1 + '" y2="' + Y(T) + '"/>');
-      g.push(cap(x0 - 6, Y(T) + 4, String(T), 'gray', 'end'));
+      g.push(svgCap(x0 - 6, Y(T) + 4, String(T), 'gray', 'end'));
     });
     // кривая
     const pts = [];
@@ -232,22 +226,22 @@
     const xa = X(tOf(800) - tRef), xb = X(tOf(500) - tRef);
     g.push('<rect x="' + xa + '" y="' + Y(800) + '" width="' + Math.max(1, xb - xa) + '" height="' +
       (Y(500) - Y(800)) + '" fill="rgba(21,94,117,.12)" stroke="#155e75" stroke-width="1"/>');
-    g.push('<line class="ln-dim" x1="' + xa + '" y1="' + (Y(500) + 22) + '" x2="' + xb + '" y2="' + (Y(500) + 22) + '"/>');
-    g.push(cap(Math.min(x1 - 4, (xa + xb) / 2), Y(500) + 38,
+    g.push(svgDim(xa, Y(500) + 22, xb, Y(500) + 22));
+    g.push(svgCap(Math.min(x1 - 4, (xa + xb) / 2), Y(500) + 38,
       'Δt 800→500 = ' + f(dt85, 1) + ' с', 'blue', 'middle'));
     // отметка температуры расчёта
     if (Tmark > T0 + 10 && Tmark < Tmax) {
       const xm = X(tOf(Tmark) - tRef);
       g.push('<circle class="pt green" cx="' + xm + '" cy="' + Y(Tmark) + '" r="4"/>');
-      g.push(cap(Math.min(x1 - 4, xm + 8), Y(Tmark) - 6,
+      g.push(svgCap(Math.min(x1 - 4, xm + 8), Y(Tmark) - 6,
         'ω(' + f(Tmark, 0) + ' °C) = ' + f(w, 2) + ' °C/с', 'green'));
     }
     // линия подогрева
     if (T0 > 20) {
       g.push('<line class="ln-thin ln-dash gray" x1="' + x0 + '" y1="' + Y(T0) + '" x2="' + x1 + '" y2="' + Y(T0) + '"/>');
-      g.push(cap(x1 - 4, Y(T0) - 6, 'подогрев T₀ = ' + f(T0, 0) + ' °C', 'gray', 'end'));
+      g.push(svgCap(x1 - 4, Y(T0) - 6, 'подогрев T₀ = ' + f(T0, 0) + ' °C', 'gray', 'end'));
     }
-    g.push(cap(x0 + 6, y1 + 4, (thin ? 'схема пластины' : 'схема массивного тела') +
+    g.push(svgCap(x0 + 6, y1 + 4, (thin ? 'схема пластины' : 'схема массивного тела') +
       ', s = ' + f(s, 1) + ' мм', 'gray'));
     el('board2').innerHTML = g.join('');
   }

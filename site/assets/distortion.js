@@ -64,21 +64,19 @@
           : 'Средние напряжения от усадочной силы превысили предел текучести — ' +
             'сечение полностью пластично, линейная модель неверна.');
 
-    W.setHtml('sum', [
+    W.setHtml('sum', sumCells([
       ['Усадочная сила', f(Fs / 1000, 1) + ' кН'],
       ['Продольное ΔL', f(dL, 2) + ' мм'],
       ['Поперечное ΔW', f(dW, 2) + ' мм'],
       ['Прогиб f', f(fdef, 2) + ' мм'],
       ['Угловая β', f(beta * 180 / Math.PI, 2) + '°'],
       ['σ = F_s/A', f(sigma, 0) + ' МПа'],
-    ].map(([k, v]) => '<div class="cell"><span class="k">' + k + '</span><span class="v">' +
-      v + '</span></div>').join(''));
+    ]));
 
-    const badge = (ok, t) => '<span class="badge ' + (ok ? 'ok' : 'bad') + '">' + t + '</span>';
     W.setHtml('checks', '<div class="controls" style="gap:6px 8px">' +
-      badge(okQA, 'q_п/A = ' + f(qA, 3) + ' Дж/мм³') + ' ' +
-      badge(okS, 'σ = ' + f(sigma, 0) + ' МПа ≤ ' + S.sigmaT + ' МПа') + ' ' +
-      badge(fdef / (L) < 1 / 500, 'f/L = 1/' + f(L / Math.max(fdef, 1e-9), 0)) +
+      badgeHtml(okQA, 'q_п/A = ' + f(qA, 3) + ' Дж/мм³') + ' ' +
+      badgeHtml(okS, 'σ = ' + f(sigma, 0) + ' МПа ≤ ' + S.sigmaT + ' МПа') + ' ' +
+      badgeHtml(fdef / (L) < 1 / 500, 'f/L = 1/' + f(L / Math.max(fdef, 1e-9), 0)) +
       '</div>');
 
     draw(fdef, L, e, dL, Fs);
@@ -87,13 +85,11 @@
   function draw(fdef, L, e, dL, Fs) {
     const x0 = 70, x1 = 590, yAx = 130;
     const g = [];
-    const cap = (x, y, t, cls, an) => '<text class="cap ' + (cls || '') + '" x="' + x + '" y="' + y +
-      '"' + (an ? ' text-anchor="' + an + '"' : '') + '>' + t + '</text>';
     // прогиб показывается в условном увеличении (иначе на схеме он невидим)
     const sag = fdef > 0.001 ? 46 : 0;
     // исходное положение
     g.push('<line class="ln gray ln-dash" x1="' + x0 + '" y1="' + yAx + '" x2="' + x1 + '" y2="' + yAx + '"/>');
-    g.push(cap(x0, yAx + 16, 'положение до сварки', 'gray'));
+    g.push(svgCap(x0, yAx + 16, 'положение до сварки', 'gray'));
     // деформированная балка: стенка
     const midx = (x0 + x1) / 2;
     const yb = (x) => {
@@ -110,22 +106,22 @@
     g.push('<polyline class="ln" points="' + pts2.join(' ') + '" stroke-width="2.6" fill="none"/>');
     const pts3 = pts.map((p) => { const [a, b] = p.split(','); return a + ',' + (parseFloat(b) + 34).toFixed(1); });
     g.push('<polyline class="ln red" points="' + pts3.join(' ') + '" stroke-width="5" fill="none"/>');
-    g.push(cap(x0 + 6, yb(x0 + 6) + 52, 'шов (усадочная сила F_s = ' + f(Fs / 1000, 1) + ' кН)', 'red'));
+    g.push(svgCap(x0 + 6, yb(x0 + 6) + 52, 'шов (усадочная сила F_s = ' + f(Fs / 1000, 1) + ' кН)', 'red'));
     // стрела прогиба
-    g.push('<line class="ln-dim" x1="' + midx + '" y1="' + yAx + '" x2="' + midx + '" y2="' + yb(midx) + '"/>');
-    g.push(cap(midx + 8, (yAx + yb(midx)) / 2 + 4, 'f = ' + f(fdef, 2) + ' мм', 'blue'));
+    g.push(svgDim(midx, yAx, midx, yb(midx)));
+    g.push(svgCap(midx + 8, (yAx + yb(midx)) / 2 + 4, 'f = ' + f(fdef, 2) + ' мм', 'blue'));
     // эксцентриситет
-    g.push('<line class="ln-dim" x1="' + (x1 - 24) + '" y1="' + yb(x1 - 24) + '" x2="' + (x1 - 24) + '" y2="' + (yb(x1 - 24) + 34) + '"/>');
-    g.push(cap(x1 - 18, yb(x1 - 24) + 20, 'e = ' + f(e, 0) + ' мм', 'gray'));
+    g.push(svgDim(x1 - 24, yb(x1 - 24), x1 - 24, yb(x1 - 24) + 34));
+    g.push(svgCap(x1 - 18, yb(x1 - 24) + 20, 'e = ' + f(e, 0) + ' мм', 'gray'));
     // продольное укорочение
-    g.push('<line class="ln-dim" x1="' + x0 + '" y1="230" x2="' + x1 + '" y2="230"/>');
-    g.push(cap(midx, 246, 'L = ' + f(L / 1000, 2) + ' м, укорочение ΔL = ' + f(dL, 2) + ' мм',
+    g.push(svgDim(x0, 230, x1, 230));
+    g.push(svgCap(midx, 246, 'L = ' + f(L / 1000, 2) + ' м, укорочение ΔL = ' + f(dL, 2) + ' мм',
       'blue', 'middle'));
     g.push('<g stroke="#b3382e" stroke-width="2" fill="none" marker-end="url(#arrE)">' +
       '<path d="M ' + (x0 + 4) + ' 268 L ' + (x0 + 46) + ' 268"/>' +
       '<path d="M ' + (x1 - 4) + ' 268 L ' + (x1 - 46) + ' 268"/></g>');
-    g.push(cap(midx, 272, 'усадка тянет концы к середине', 'red', 'middle'));
-    g.push(cap(20, 24, 'прогиб показан с увеличением; масштаб длины и прогиба разный', 'gray'));
+    g.push(svgCap(midx, 272, 'усадка тянет концы к середине', 'red', 'middle'));
+    g.push(svgCap(20, 24, 'прогиб показан с увеличением; масштаб длины и прогиба разный', 'gray'));
     el('board').innerHTML = g.join('');
   }
 
