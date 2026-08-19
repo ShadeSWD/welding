@@ -258,3 +258,10 @@ table.t tr.on td { background: #fdf3d7; }
 .live-sum .cell .k { font-size: 12px; color: var(--muted); display: block; }
 .live-sum .cell .v { font-size: 17px; font-weight: 700; color: var(--ink); }
 .live-sum .cell.upd { background: #fdf3d7; border-color: #e7dcb8; transition: none; }
+
+/* таблица виджета многокритериального выбора (relmet-choice.js) */
+table.el { width: 100%; border-collapse: collapse; font: 14.5px system-ui, sans-serif; margin: 12px 0; }
+table.el th, table.el td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+table.el th:first-child, table.el td:first-child { text-align: left; }
+table.el th { background: var(--chip); font-weight: 600; }
+.relmet-box input[type=number] { font: 13.5px system-ui, sans-serif; padding: 3px 5px; border: 1px solid var(--line); border-radius: 6px; }
